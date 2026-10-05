@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexBudget | Premium Tracker</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Tailwind Config & Custom Styles -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0b0f19',
+                            800: '#111827',
+                            700: '#1f2937'
+                        },
+                        brand: {
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5'
+                        },
+                        income: '#10b981',
+                        expense: '#f43f5e'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --glass-bg: rgba(31, 41, 55, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #f3f4f6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Glassmorphism Utilities */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Animations */
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-slide-up {
+            animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Hover effects */
+        .hover-scale {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+        }
+        .hover-scale:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Inputs */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.6;
+            cursor: pointer;
+        }
+        
+        .custom-input {
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
+        }
+        .custom-input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex justify-center items-start">
+
+<div class="w-full max-w-6xl mx-auto space-y-6 animate-fade-in">
+    
+    <!-- Header -->
+    <header class="text-center py-4 relative">
+        <h1 class="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-purple-500 mb-2">
+            NexBudget
+        </h1>
+        <p class="text-gray-400 text-sm font-medium tracking-wide">SMART WEALTH TRACKER</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Dashboard Stats & Form -->
+        <div class="lg:col-span-5 space-y-6">
+            
+            <!-- Dashboard Stats -->
+            <div class="glass rounded-2xl p-6 hover-scale relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-brand-500 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
+                
+                <div class="text-center pb-5 border-b border-gray-700/50">
+                    <span class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total Balance</span>
+                    <h2 id="netBalance" class="text-4xl font-bold text-white mt-2 tracking-tight">₹0.00</h2>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mt-5">
+                    <div class="bg-white/5 rounded-xl p-4 text-center border border-white/5">
+                        <h4 class="text-xs text-gray-400 uppercase font-semibold mb-1 flex items-center justify-center gap-1">
+                            <svg class="w-3 h-3 text-income" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                            Income
+                        </h4>
+                        <p id="totalIncome" class="text-income text-lg font-bold">₹0.00</p>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-4 text-center border border-white/5">
+                        <h4 class="text-xs text-gray-400 uppercase font-semibold mb-1 flex items-center justify-center gap-1">
+                            <svg class="w-3 h-3 text-expense" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                            Expenses
+                        </h4>
+                        <p id="totalExpense" class="text-expense text-lg font-bold">₹0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Transaction Form -->
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-lg font-semibold mb-4 text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    New Transaction
+                </h3>
+                
+                <form id="transactionForm" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 ml-1">Type</label>
+                            <select id="type" class="custom-input w-full p-2.5 rounded-lg text-sm text-gray-200 cursor-pointer">
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 ml-1">Date</label>
+                            <input type="date" id="date" required class="custom-input w-full p-2.5 rounded-lg text-sm text-gray-200 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 ml-1">Description</label>
+                        <input type="text" id="desc" placeholder="e.g., Grocery Shopping" required autocomplete="off"
+                               class="custom-input w-full p-2.5 rounded-lg text-sm text-gray-200 placeholder-gray-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 ml-1">Amount (₹)</label>
+                            <input type="number" id="amount" step="0.01" min="1" placeholder="0.00" required
+                                   class="custom-input w-full p-2.5 rounded-lg text-sm text-gray-200 placeholder-gray-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 ml-1">Category</label>
+                            <select id="category" class="custom-input w-full p-2.5 rounded-lg text-sm text-gray-200 cursor-pointer">
+                                <!-- Populated dynamically by JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full mt-2 bg-brand-500 hover:bg-brand-600 text-white font-medium py-3 rounded-lg transition-colors duration-200 shadow-lg shadow-brand-500/30 flex justify-center items-center gap-2">
+                        <span>Add Record</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column: Chart & History -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Expense Chart -->
+            <div class="glass rounded-2xl p-6 relative">
+                <h3 class="text-lg font-semibold mb-4 text-white">Expense Analytics</h3>
+                <div class="h-48 w-full flex justify-center items-center relative">
+                    <canvas id="expenseChart"></canvas>
+                    <div id="chartEmptyState" class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm hidden">
+                        No expense data available
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="glass rounded-2xl p-6 flex flex-col h-[500px]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-white">History</h3>
+                    <div class="flex gap-2">
+                        <button class="filter-btn active px-3 py-1 text-xs rounded-full bg-brand-500 text-white transition-all" data-filter="all">All</button>
+                        <button class="filter-btn px-3 py-1 text-xs rounded-full bg-white/10 text-gray-300 hover:bg-white/20 transition-all" data-filter="income">In</button>
+                        <button class="filter-btn px-3 py-1 text-xs rounded-full bg-white/10 text-gray-300 hover:bg-white/20 transition-all" data-filter="expense">Out</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto pr-2" id="transactionContainer">
+                    <ul class="space-y-3" id="transactionList">
+                        <!-- Items injected here -->
+                    </ul>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-700/50 text-right">
+                    <button onclick="showClearModal()" class="text-xs text-gray-400 hover:text-expense transition-colors flex items-center justify-end w-full gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Clear All Data
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Custom Confirmation Modal (No alert/confirm allowed) -->
+<div id="clearModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex justify-center items-center opacity-0 transition-opacity duration-300">
+    <div class="glass rounded-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300" id="clearModalContent">
+        <div class="text-center">
+            <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Clear All Data?</h3>
+            <p class="text-sm text-gray-400 mb-6">This action cannot be undone. All your transactions will be permanently deleted.</p>
+            <div class="flex gap-3">
+                <button onclick="hideClearModal()" class="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors">Cancel</button>
+                <button onclick="clearAllData()" class="flex-1 py-2 rounded-lg bg-expense hover:bg-red-600 text-white text-sm font-medium transition-colors shadow-lg shadow-expense/30">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration & State ---
+    const expenseCategories = ['Housing', 'Transport', 'Food & Groceries', 'Utilities', 'Entertainment', 'Healthcare', 'Shopping', 'Education', 'Other'];
+    const incomeCategories = ['Salary', 'Business', 'Investments', 'Freelance', 'Gifts', 'Other'];
+    
+    // Category Colors for Chart.js
+    const categoryColors = {
+        'Housing': '#6366f1', // Indigo
+        'Transport': '#3b82f6', // Blue
+        'Food & Groceries': '#10b981', // Emerald
+        'Utilities': '#f59e0b', // Amber
+        'Entertainment': '#ec4899', // Pink
+        'Healthcare': '#ef4444', // Red
+        'Shopping': '#8b5cf6', // Purple
+        'Education': '#14b8a6', // Teal
+        'Other': '#6b7280', // Gray
+    };
+
+    let entries = JSON.parse(localStorage.getItem('nexbudget_entries')) || [];
+    let currentFilter = 'all';
+    let expenseChartInstance = null;
+
+    // --- DOM Elements ---
+    const form = document.getElementById('transactionForm');
+    const descInput = document.getElementById('desc');
+    const amountInput = document.getElementById('amount');
+    const typeSelect = document.getElementById('type');
+    const categorySelect = document.getElementById('category');
+    const dateInput = document.getElementById('date');
+    const list = document.getElementById('transactionList');
+    
+    const netBalanceEl = document.getElementById('netBalance');
+    const totalIncomeEl = document.getElementById('totalIncome');
+    const totalExpenseEl = document.getElementById('totalExpense');
+    
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    
+    const modal = document.getElementById('clearModal');
+    const modalContent = document.getElementById('clearModalContent');
+
+    // --- Helper Functions ---
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 2
+        }).format(amount);
+    };
+
+    const formatDateDisplay = (dateString) => {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString('en-IN', options);
+    };
+
+    const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    const updateCategoryDropdown = () => {
+        const type = typeSelect.value;
+        const options = type === 'expense' ? expenseCategories : incomeCategories;
+        
+        categorySelect.innerHTML = '';
+        options.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            categorySelect.appendChild(opt);
+        });
+    };
+
+    // --- Modal Logic ---
+    window.showClearModal = () => {
+        modal.classList.remove('hidden');
+        // Small delay for display block to register before animating opacity
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+        }, 10);
+    };
+
+    window.hideClearModal = () => {
+        modal.classList.add('opacity-0');
+        modalContent.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300); // Matches transition duration
+    };
+
+    window.clearAllData = () => {
+        entries = [];
+        hideClearModal();
+        render();
+    };
+
+    // --- Chart Logic ---
+    const updateChart = () => {
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        const emptyState = document.getElementById('chartEmptyState');
+        
+        // Filter expenses
+        const expenses = entries.filter(e => e.type === 'expense');
+        
+        if (expenses.length === 0) {
+            emptyState.classList.remove('hidden');
+            if (expenseChartInstance) {
+                expenseChartInstance.destroy();
+                expenseChartInstance = null;
+            }
+            return;
+        } else {
+            emptyState.classList.add('hidden');
+        }
+
+        // Aggregate by category
+        const categoryData = {};
+        expenses.forEach(e => {
+            categoryData[e.category] = (categoryData[e.category] || 0) + e.amount;
+        });
+
+        const labels = Object.keys(categoryData);
+        const data = Object.values(categoryData);
+        const backgroundColors = labels.map(label => categoryColors[label] || categoryColors['Other']);
+
+        const chartConfig = {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#9ca3af',
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { family: 'Inter', size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        titleColor: '#f3f4f6',
+                        bodyColor: '#f3f4f6',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed !== null) {
+                                    label += formatCurrency(context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        if (expenseChartInstance) {
+            expenseChartInstance.data = chartConfig.data;
+            expenseChartInstance.update();
+        } else {
+            expenseChartInstance = new Chart(ctx, chartConfig);
+        }
+    };
+
+    // --- Render Logic ---
+    const render = () => {
+        let inc = 0;
+        let exp = 0;
+        list.innerHTML = '';
+
+        // Calculate totals based on ALL entries (ignore filters for top stats)
+        entries.forEach(item => {
+            if (item.type === 'income') inc += item.amount;
+            else exp += item.amount;
+        });
+
+        // Filter items for the list display
+        const filteredEntries = entries.filter(item => {
+            if (currentFilter === 'all') return true;
+            return item.type === currentFilter;
+        });
+
+        if (filteredEntries.length === 0) {
+            list.innerHTML = `
+                <div class="text-center py-10 text-gray-500 text-sm animate-fade-in flex flex-col items-center">
+                    <svg class="w-12 h-12 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                    No transactions found.
+                </div>
+            `;
+        } else {
+            // Sort by date (newest first)
+            filteredEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            filteredEntries.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'bg-white/5 border border-white/5 rounded-xl p-4 flex justify-between items-center hover-scale animate-slide-up';
+                li.style.animationDelay = `${index * 0.05}s`; // Staggered animation
+                
+                const isIncome = item.type === 'income';
+                const amountColor = isIncome ? 'text-income' : 'text-expense';
+                const prefix = isIncome ? '+' : '-';
+                const icon = isIncome 
+                    ? `<div class="bg-income/20 p-2 rounded-lg text-income"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path></svg></div>`
+                    : `<div class="bg-expense/20 p-2 rounded-lg text-expense"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path></svg></div>`;
+
+                li.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        ${icon}
+                        <div>
+                            <strong class="block text-gray-200 text-sm md:text-base font-medium">${item.desc}</strong>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs px-2 py-0.5 rounded bg-gray-800 border border-gray-700 text-gray-400">${item.category}</span>
+                                <span class="text-xs text-gray-500">&bull; ${formatDateDisplay(item.date)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold ${amountColor} whitespace-nowrap">
+                            ${prefix}${formatCurrency(item.amount)}
+                        </span>
+                        <button onclick="removeItem('${item.id}')" class="text-gray-500 hover:text-expense p-1 transition-colors rounded-full hover:bg-white/10" title="Delete">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // Update top stats
+        const bal = inc - exp;
+        netBalanceEl.innerText = formatCurrency(bal);
+        totalIncomeEl.innerText = `+${formatCurrency(inc)}`;
+        totalExpenseEl.innerText = `-${formatCurrency(exp)}`;
+
+        // Save and Update Chart
+        localStorage.setItem('nexbudget_entries', JSON.stringify(entries));
+        updateChart();
+    };
+
+    // --- Event Listeners ---
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const newEntry = {
+            id: generateId(),
+            desc: descInput.value.trim(),
+            amount: parseFloat(amountInput.value),
+            type: typeSelect.value,
+            category: categorySelect.value,
+            date: dateInput.value
+        };
+
+        entries.push(newEntry);
+        
+        // Reset specific fields but keep date and type for convenience
+        descInput.value = '';
+        amountInput.value = '';
+        descInput.focus();
+
+        render();
+    });
+
+    typeSelect.addEventListener('change', updateCategoryDropdown);
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Update active state classes
+            filterBtns.forEach(b => {
+                b.classList.remove('bg-brand-500', 'text-white');
+                b.classList.add('bg-white/10', 'text-gray-300');
+            });
+            const target = e.target;
+            target.classList.remove('bg-white/10', 'text-gray-300');
+            target.classList.add('bg-brand-500', 'text-white');
+            
+            currentFilter = target.dataset.filter;
+            render();
+        });
+    });
+
+    window.removeItem = function(id) {
+        entries = entries.filter(item => item.id !== id);
+        render();
+    };
+
+    // --- Initialization ---
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+    
+    // Init categories and UI
+    updateCategoryDropdown();
+    render();
+
+</script>
+</body>
+</html>
